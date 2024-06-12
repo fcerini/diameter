@@ -1,0 +1,51 @@
+package main
+
+import (
+	"fmt"
+	"log"
+
+	"github.com/fiorix/go-diameter/diam"
+	"github.com/fiorix/go-diameter/diam/avp"
+	"github.com/fiorix/go-diameter/diam/datatype"
+)
+
+func main() {
+	// 1. Establish Diameter Connection (Simplified)
+	clientCfg := &diam.ClientConfig{
+		Addr:       "your.diameter.server:3868", 
+		OriginHost: "myclient.example.com",
+		OriginRealm: "example.com",
+		// ... Add authentication details ...
+	}
+	client, err := diam.NewClient(clientCfg)
+	if err != nil {
+		log.Fatalf("Failed to create client: %v", err)
+	}
+	defer client.Close()
+
+	// 2. Prepare QoS Data (Hypothetical Example)
+	ipList := []string{"192.168.1.10", "192.168.1.20"}
+	qosPolicyName := "HighPriorityPolicy" // Vendor-specific
+
+	// 3. Construct Diameter Message (Hypothetical - Vendor Specific)
+	msg := diam.NewRequest(
+		diam.CommandCode{Code: 257, AppID: 16777216}, // CCR
+		diam.NewAVP(avp.SessionID, avp.Mbit, 0, datatype.UTF8String("some-session-id")), 
+		// ... Add Origin-Host, Origin-Realm, etc. ...
+		// ... Vendor-Specific AVPs for QoS ...
+		diam.NewAVP(avp.VendorSpecificApplicationID, avp.Mbit, 0, &diam.GroupedAVP{
+			AVP: []*diam.AVP{
+				diam.NewAVP(avp.VendorID, avp.Mbit, 0, datatype.Unsigned32(12345)), // Your vendor ID
+				// ... Add AVPs for IP list, QoS policy name, and other parameters ...
+			},
+		}),
+	)
+
+	// 4. Send Request and Handle Response
+	if _, err := client.Send(msg); err != nil {
+		log.Fatalf("Failed to send message: %v", err)
+	}
+
+	// ... Process the response (CCA) to check for success/failure ...
+	fmt.Println("QoS request sent (hypothetical example)")
+}
